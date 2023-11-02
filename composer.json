@@ -1,0 +1,13 @@
+{
+    "name": "duukkis/bsky",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Duukkis\\Bsky\\": "src/"
+        }
+    },
+    "require": {
+        "ext-curl": "*",
+        "nesbot/carbon": "^2.71"
+    }
+}
