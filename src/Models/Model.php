@@ -6,6 +6,8 @@ use Duukkis\Bsky\helpers\Mapper;
 
 abstract class Model
 {
+    public array $useKey = [];
+
     public array $mapArrayToObjects = [];
 
     public static function build(\stdClass $item, Model $model): self

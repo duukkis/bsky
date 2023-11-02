@@ -10,5 +10,5 @@ class Feed extends Model
         "feed" => Post::class,
     ];
 
-    public bool 
+    public array $useKey = ["feed" => "post"];
 }

@@ -30,17 +30,17 @@ class Mapper
     {
         foreach ($json as $key => $val) {
             if (property_exists($obj, $key)) {
-                $obj = static::mapItem($obj, $key, $val);
+                $obj = static::mapItem($obj, $key, $val, isset($obj->useKey[$key]) ? $obj->useKey[$key] : null);
             }
         }
         return $obj;
     }
 
-    private static function mapItem(Model $obj, $key, $val): Model
+    private static function mapItem(Model $obj, $key, $val, $useArrayKey): Model
     {
         // json contains object that is not mapped
         if (!property_exists($obj, $key)) {
-            // return $obj;
+            return $obj;
         }
         $rp = new \ReflectionProperty($obj, $key);
         $type = $rp->getType()->getName();
@@ -60,10 +60,13 @@ class Mapper
             case "array":
                 if (isset($obj->mapArrayToObjects[$key])) {
                     foreach ($val as $j => $sub) {
+                        if ($useArrayKey !== null) {
+                            $sub = $sub->$useArrayKey;
+                        }
                         /** @var Model $subitem */
                         $subitem = new $obj->mapArrayToObjects[$key]();
                         foreach ($sub as $subkey => $subval) {
-                            $subitem = self::mapItem($subitem, $subkey, $subval);
+                            $subitem = self::mapItem($subitem, $subkey, $subval, null);
                         }
                         array_push($obj->$key, $subitem);
                     }
