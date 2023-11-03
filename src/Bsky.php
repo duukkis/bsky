@@ -141,10 +141,10 @@ class Bsky
             CURLOPT_CUSTOMREQUEST => 'POST',
         ];
         if (count($fields) > 0) {
-            $opts[] = [CURLOPT_POSTFIELDS => json_encode($fields)];
+            $opts[CURLOPT_POSTFIELDS] = json_encode($fields);
         }
         if (count($headers) > 0) {
-            $opts[] = [CURLOPT_HTTPHEADER => $headers];
+            $opts[CURLOPT_HTTPHEADER] = $headers;
         }
         curl_setopt_array($curl, $opts);
 
