@@ -14,7 +14,8 @@ class Bsky
 
     public function __construct(
         private string $username,
-        private string $password
+        private string $password,
+        private string $sessionDir
     )
     {
         if (!$this->loadSession($this->username)) {
@@ -39,7 +40,7 @@ class Bsky
 
     public function storeSession(array $session): void
     {
-        $fileName = "./sessions/" . $session["handle"] . ".store";
+        $fileName = $this->sessionDir . $session["handle"] . ".store";
         file_put_contents($fileName, serialize($session));
         $this->did = $session["did"];
         $this->accessJwt = $session["accessJwt"];
@@ -48,7 +49,7 @@ class Bsky
 
     public function loadSession(string $handle): bool
     {
-        $fileName = "./sessions/" . $handle . ".store";
+        $fileName = $this->sessionDir . $handle . ".store";
         if (!file_exists($fileName)) {
             return false;
         }
@@ -59,19 +60,9 @@ class Bsky
         return true;
     }
 
-    public function login(): void
+    public function login(): bool
     {
-        $session = $this->post(
-            'https://bsky.social/xrpc/com.atproto.server.createSession',
-            ["identifier" => $this->username, "password" => $this->password],
-            false,
-            [],
-            true,
-        );
-        print_r($session);die();
-        $this->storeSession($session);
-
-/*        $curl = curl_init();
+        $curl = curl_init();
         curl_setopt_array($curl, array(
             CURLOPT_URL => 'https://bsky.social/xrpc/com.atproto.server.createSession',
             CURLOPT_RETURNTRANSFER => true,
@@ -88,21 +79,15 @@ class Bsky
         $response = curl_exec($curl);
         curl_close($curl);
         $session = json_decode($response,TRUE);
-        $this->storeSession($session);*/
+        if (!isset($session["error"])) {
+            $this->storeSession($session);
+            return true;
+        }
+        return false;
     }
 
-    public function refreshToken(string $refreshToken): void
+    public function refreshToken(string $refreshToken): bool
     {
-        $session = $this->post(
-            'https://bsky.social/xrpc/com.atproto.server.refreshSession',
-            [],
-            false,
-            ['Authorization: Bearer ' . $refreshToken],
-            true,
-        );
-        print_r($session);die();
-        $this->storeSession($session);
-        /*
         $curl = curl_init();
         curl_setopt_array($curl, array(
             CURLOPT_URL => 'https://bsky.social/xrpc/com.atproto.server.refreshSession',
@@ -120,7 +105,11 @@ class Bsky
         $response = curl_exec($curl);
         curl_close($curl);
         $session = json_decode($response,TRUE);
-        $this->storeSession($session);*/
+        if (!isset($session["error"])) {
+            $this->storeSession($session);
+            return true;
+        }
+        return false;
     }
 
     private function getAuthHeader(): string
@@ -135,17 +124,14 @@ class Bsky
     public function post(
         string $url,
         array $fields,
-        bool $auth = true,
         array $headers = [],
-        bool $returnArray = false,
         int $retry = 0,
     ): mixed {
         $headers = array_merge(['Content-Type: application/json'], $headers);
-        if ($auth) {
-            $headers[] = $this->getAuthHeader();
-        }
+        $headers[] = $this->getAuthHeader();
         $curl = curl_init();
-        curl_setopt_array($curl, [
+
+        $opts = [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_MAXREDIRS => 10,
@@ -153,29 +139,29 @@ class Bsky
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => json_encode($fields),
-            CURLOPT_HTTPHEADER => $headers,
-        ]);
+        ];
+        if (count($fields) > 0) {
+            $opts[] = [CURLOPT_POSTFIELDS => json_encode($fields)];
+        }
+        if (count($headers) > 0) {
+            $opts[] = [CURLOPT_HTTPHEADER => $headers];
+        }
+        curl_setopt_array($curl, $opts);
 
         $response = curl_exec($curl);
         curl_close($curl);
-        if (!$returnArray) {
-            $result = json_decode($response);
-            if (isset($result->error) && $result->error == "ExpiredToken") {
-                // first lets try refresh token
-                if ($retry == 0) {
-                    $this->refreshToken($this->getRefreshJwt());
-                    return $this->post($url, $fields, $auth, $headers, $returnArray, 1);
-                } else if ($retry == 1) { // refresh failed, lets try login
-                    $this->login();
-                    return $this->post($url, $fields, $auth, $headers, $returnArray, 2);
-                } else { // refresh and login failed
-                    throw new Exception("refresh and login failed");
-                }
+        $result = json_decode($response);
+        if (isset($result->error) && $result->error == "ExpiredToken") {
+            // first lets try refresh token
+            if ($this->refreshToken($this->getRefreshJwt())) {
+                return $this->post($url, $fields, $headers, 1);
+            } else if ($this->login()){
+                return $this->post($url, $fields, $headers, 2);
+            } else {
+                throw new Exception("refresh and login failed");
             }
-            return $result;
         }
-        return json_decode($response, $returnArray);
+        return $result;
     }
 
     public function feed(): FeedEntity

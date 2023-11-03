@@ -1,2 +1,4 @@
 pass
 vendor/*
+.idea/*
+composer.lock
