@@ -2,13 +2,14 @@
 namespace Duukkis\Bsky;
 
 use Duukkis\Bsky\Entities\FeedEntity;
+use Duukkis\Bsky\Entities\NotificationEntity;
+use Exception;
 
 class Bsky
 {
     private ?string $did = null;
     private ?string $accessJwt = null;
     private ?string $refreshJwt = null;
-    private ?string $email = null;
 
     public function __construct(
         private string $username,
@@ -43,7 +44,6 @@ class Bsky
         $this->did = $session["did"];
         $this->accessJwt = $session["accessJwt"];
         $this->refreshJwt = $session["refreshJwt"];
-        $this->email = $session["email"];
     }
 
     public function loadSession(string $handle): bool
@@ -56,7 +56,6 @@ class Bsky
         $this->did = $session["did"];
         $this->accessJwt = $session["accessJwt"];
         $this->refreshJwt = $session["refreshJwt"];
-        $this->email = $session["email"];
         return true;
     }
 
@@ -110,11 +109,15 @@ class Bsky
         return new FeedEntity($this);
     }
 
-    public function get(string $url, array $params): mixed
+    public function notification(): NotificationEntity
+    {
+        return new NotificationEntity($this);
+    }
+
+    public function get(string $url, array $params, int $retry = 0): mixed
     {
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            // https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed
             CURLOPT_URL => $url . '?' . http_build_query($params),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_MAXREDIRS => 10,
@@ -128,28 +131,19 @@ class Bsky
             ),
         ));
         $response = curl_exec($curl);
-        return json_decode($response);
-    }
 
-    public function getFeed()
-    {
-
-//        if response.status_code == 401:  # Unauthorized
-/*        curl_close($curl);
-        print_r($response);
-        die();
-        $homeFeed = $this->client->getTimeline()->feed;
-
-        foreach ($homeFeed as $item) {
-            echo "{$item->post->author->displayName} (@{$item->post->author->handle}) says:\n\n";
-            echo "{$item->post->record->text}\n\n";
-            if (isset($item->post->record->reply)) {
-                echo "in reply to {$item->post->record->reply->parent->uri}\n\n";
+        $result = json_decode($response);
+        if (isset($result->error) && $result->error == "ExpiredToken") {
+            // first lets try refresh token
+            if ($retry == 0) {
+                $this->refreshToken($this->getDid(), $this->getRefreshJwt());
+                return $this->get($url, $params, 1);
+            } else if ($retry == 1) { // refresh failed, lets try login
+                $this->login();
+            } else { // refresh and login failed
+                throw new Exception("refresh and login failed");
             }
-            echo str_repeat('-', 72);
-            echo "\n\n";
-        }*/
+        }
+        return $result;
     }
 }
-
-

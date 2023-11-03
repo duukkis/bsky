@@ -24,4 +24,15 @@ class FeedEntity
             new Feed()
         );
     }
+
+    public function getTimeline(array $params): Model|Feed
+    {
+        $useParams = array_merge([
+            "limit" => 10,
+        ], $params);
+        return Mapper::mapJsonObjectToClass(
+            $this->bsky->get("https://bsky.social/xrpc/app.bsky.feed.getTimeline", $useParams),
+            new Feed()
+        );
+    }
 }

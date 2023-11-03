@@ -54,6 +54,9 @@ class Mapper
             case "bool":
                 $obj->$key = (bool) $val;
                 break;
+            case "mixed":
+                $obj->$key = $val;
+                break;
             case "Carbon\Carbon":
                 $obj->$key = Carbon::parse($val);
                 break;
