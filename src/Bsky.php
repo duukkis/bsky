@@ -153,9 +153,11 @@ class Bsky
         $result = json_decode($response);
         if (isset($result->error) && $result->error == "ExpiredToken") {
             // first lets try refresh token
-            if ($this->refreshToken($this->getRefreshJwt())) {
+            if ($retry == 0) {
+                $this->refreshToken($this->getRefreshJwt());
                 return $this->post($url, $fields, $headers, 1);
-            } else if ($this->login()){
+            } else if ($retry == 1){
+                $this->login();
                 return $this->post($url, $fields, $headers, 2);
             } else {
                 throw new Exception("refresh and login failed");
