@@ -38,7 +38,30 @@ class RepoEntity
         return $this->bsky->post("https://bsky.social/xrpc/com.atproto.repo.createRecord", $params);
     }
 
-    /**
-     * https://github.com/cjrasmussen/BlueskyApi
-     */
+    public function createRecordWithImage(string $text, string $file, string $alt, array $langs = ['fi']): mixed
+    {
+        $file = file_get_contents($file);
+        $blob = $this->bsky->post("https://bsky.social/xrpc/com.atproto.repo.uploadBlob", $file, ['Content-Type: image/jpeg']);
+
+        $params = [
+            'collection' => 'app.bsky.feed.post',
+            'repo' => $this->bsky->getDid(),
+            'record' => [
+                'text' => $text,
+                'langs' => $langs,
+                'createdAt' => date('c'),
+                '$type' => 'app.bsky.feed.post',
+                'embed' => [
+                    '$type' => 'app.bsky.embed.images',
+                    'images' => [
+                        [
+                            'alt' => $alt,
+                            'image' => $blob->blob,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        return $this->bsky->post("https://bsky.social/xrpc/com.atproto.repo.createRecord", $params);
+    }
 }

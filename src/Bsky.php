@@ -123,11 +123,10 @@ class Bsky
 
     public function post(
         string $url,
-        array $fields,
+        array|string $fields,
         array $headers = [],
         int $retry = 0,
     ): mixed {
-        $headers = array_merge(['Content-Type: application/json'], $headers);
         $headers[] = $this->getAuthHeader();
         $curl = curl_init();
 
@@ -140,8 +139,12 @@ class Bsky
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
         ];
-        if (count($fields) > 0) {
+        if (is_array($fields) && count($fields) > 0) {
+            $headers[] = 'Content-Type: application/json';
             $opts[CURLOPT_POSTFIELDS] = json_encode($fields);
+        } else {
+            // doing a file blob
+            $opts[CURLOPT_POSTFIELDS] = $fields;
         }
         if (count($headers) > 0) {
             $opts[CURLOPT_HTTPHEADER] = $headers;
