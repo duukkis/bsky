@@ -35,7 +35,34 @@ class RepoEntity
                 '$type' => 'app.bsky.feed.post',
             ],
         ];
+        $links = $this->parseLinks($text);
+        if ($links != []) {
+            $params["record"]["facets"] = [$links];
+        }
         return $this->bsky->post("https://bsky.social/xrpc/com.atproto.repo.createRecord", $params);
+    }
+
+    public function parseLinks(string $str): ?array
+    {
+        preg_match_all('/\b(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)[-A-Z0-9+&@#\/%=~_|$?!:,.]*[A-Z0-9+&@#\/%=~_|$]/i', $str, $result, PREG_PATTERN_ORDER);
+        if ($result[0][0] != []) {
+            $uri = $result[0][0];
+            $byteStart = mb_strpos($str, $uri) + 1;
+            $byteEnd = $byteStart + mb_strlen($uri);
+            return [
+                "index" => [
+                    "byteStart" => $byteStart,
+                    "byteEnd" => $byteEnd,
+                ],
+                "features" => [
+                    [
+                        '$type' => "app.bsky.richtext.facet#link",
+                        "uri" => $uri
+                    ]
+                ]
+            ];
+        }
+        return [];
     }
 
     public function createRecordWithImage(string $text, string $file, string $alt, array $langs = ['fi']): mixed
