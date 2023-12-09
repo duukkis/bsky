@@ -45,10 +45,11 @@ class RepoEntity
     public function parseLinks(string $str): ?array
     {
         preg_match_all('/\b(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)[-A-Z0-9+&@#\/%=~_|$?!:,.]*[A-Z0-9+&@#\/%=~_|$]/i', $str, $result, PREG_PATTERN_ORDER);
-        if ($result[0][0] != []) {
+        if (isset($result[0][0]) && $result[0][0] != []) {
             $uri = $result[0][0];
-            $byteStart = mb_strpos($str, $uri) + 1;
-            $byteEnd = $byteStart + mb_strlen($uri);
+            // don't use mb_ so we count bytes
+            $byteStart = strpos($str, $uri);
+            $byteEnd = $byteStart + strlen($uri);
             return [
                 "index" => [
                     "byteStart" => $byteStart,
@@ -89,6 +90,10 @@ class RepoEntity
                 ],
             ],
         ];
+        $links = $this->parseLinks($text);
+        if ($links != []) {
+            $params["record"]["facets"] = [$links];
+        }
         return $this->bsky->post("https://bsky.social/xrpc/com.atproto.repo.createRecord", $params);
     }
 }
