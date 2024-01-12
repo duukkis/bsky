@@ -3,6 +3,7 @@ namespace Duukkis\Bsky;
 
 use Duukkis\Bsky\Entities\FeedEntity;
 use Duukkis\Bsky\Entities\NotificationEntity;
+use Duukkis\Bsky\Entities\ProfileEntity;
 use Duukkis\Bsky\Entities\RepoEntity;
 use Exception;
 
@@ -177,6 +178,11 @@ class Bsky
     public function repo(): RepoEntity
     {
         return new RepoEntity($this);
+    }
+
+    public function profile(): ProfileEntity
+    {
+        return new ProfileEntity($this);
     }
 
     public function notification(): NotificationEntity

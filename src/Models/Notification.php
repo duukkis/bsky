@@ -10,7 +10,7 @@ class Notification extends Model
     public string $cid;
     public Author $author;
 
-    // reasons being like. follow, repost, reply
+    // reasons being like. follow, repost, reply, mention
     public string $reason;
 
     // this can be anything
