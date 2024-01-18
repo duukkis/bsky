@@ -66,10 +66,15 @@ class RepoEntity
         return [];
     }
 
-    public function createRecordWithImage(string $text, string $file, string $alt, array $langs = ['fi']): mixed
+    public function uploadFile(string $file)
     {
         $file = file_get_contents($file);
-        $blob = $this->bsky->post("https://bsky.social/xrpc/com.atproto.repo.uploadBlob", $file, ['Content-Type: image/jpeg']);
+        return $this->bsky->post("https://bsky.social/xrpc/com.atproto.repo.uploadBlob", $file, ['Content-Type: image/jpeg']);
+    }
+
+    public function createRecordWithImage(string $text, string $file, string $alt, array $langs = ['fi']): mixed
+    {
+        $blob = $this->uploadFile($file);
 
         $params = [
             'collection' => 'app.bsky.feed.post',
