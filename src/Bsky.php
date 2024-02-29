@@ -167,6 +167,9 @@ class Bsky
                 throw new Exception("refresh and login failed");
             }
         }
+        if (isset($result->error)) {
+            throw new Exception($result->message);
+        }
         return $result;
     }
 
@@ -220,6 +223,9 @@ class Bsky
             } else { // refresh and login failed
                 throw new Exception("refresh and login failed");
             }
+        }
+        if (isset($result->error)) {
+            throw new Exception($result->message);
         }
         return $result;
     }

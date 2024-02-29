@@ -6,6 +6,7 @@ use Carbon\Carbon;
 
 class Profile extends Model
 {
+    public string $did;
     public string $handle;
     public string $displayName;
     public string $description;
