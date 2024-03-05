@@ -6,7 +6,6 @@ use Duukkis\Bsky\Bsky;
 use Duukkis\Bsky\helpers\Mapper;
 use Duukkis\Bsky\Models\Model;
 use Duukkis\Bsky\Models\Profile;
-use Duukkis\Bsky\Models\ProfileRecord;
 
 class ProfileEntity
 {
